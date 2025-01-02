@@ -15,9 +15,9 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "create-composite-xmls", requiresDependencyResolution = ResolutionScope.COMPILE, defaultPhase = LifecyclePhase.PACKAGE)
 public class CreateCompositeXmlsMojo extends AbstractP2SiteMojo {
 
-  @Override
-  public void execute() throws MojoExecutionException, MojoFailureException {
-    executeInternal(true, false);
-  }
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        executeInternal(true, false);
+    }
 
 }
