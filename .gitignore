@@ -1,0 +1,15 @@
+#maven excludes
+target/
+release.properties
+
+#Eclipse excludes
+.classpath
+.project
+.settings/
+
+#Intellij idea excludes
+.idea
+*.iml
+
+#Project excludes
+ignore/

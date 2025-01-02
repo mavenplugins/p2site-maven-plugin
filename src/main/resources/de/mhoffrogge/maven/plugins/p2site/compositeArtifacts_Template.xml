@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?compositeArtifactRepository version='1.0.0'?>
+<!-- DO NOT EDIT - This file was created by a build procedure and might be overridden -->
+<repository name='${repoName}' type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository' version='1.0.0'>
+    <properties size='1'>
+        <property name='p2.timestamp' value='${timeStamp}'/>
+    </properties>
+    <children size='${childSize}'>
+${childLocations}
+    </children>
+</repository>
