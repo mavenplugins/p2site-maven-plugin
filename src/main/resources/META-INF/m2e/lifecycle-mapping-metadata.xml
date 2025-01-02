@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lifecycleMappingMetadata>
+	<pluginExecutions>
+		<pluginExecution>
+			<pluginExecutionFilter>
+				<goals>
+					<goal>build-index-html</goal> <!-- BuildIndexHtmlMojo -->
+					<goal>create-composite-xmls</goal> <!-- CreateCompositeXmlsMojo -->
+				</goals>
+			</pluginExecutionFilter>
+			<action>
+				<ignore />
+			</action>
+		</pluginExecution>
+	</pluginExecutions>
+</lifecycleMappingMetadata>
