@@ -2,7 +2,10 @@
 <head>
 <link rel="stylesheet" href="https://www.eclipse.org/eclipse.org-common/themes/solstice/public/stylesheets/quicksilver.min.css?v1.3"/>
 <script>
-	if ('${update.site.version}' != '') {
+	if ('${update.site.title}' != '') {
+		document.write("<title>${update.site.title}</title>");
+	// for backward compatibility
+	} else if ('${update.site.version}' != '') {
 		document.write("<title>${update.site.name} - ${update.site.version}</title>");
 	} else {
 		document.write("<title>${update.site.name}</title>");
@@ -32,8 +35,12 @@
 <!--
 		<h2 class="title">${update.site.name}</h2>
 -->
-		<h2>Eclipse Plugin Downloads - ${update.site.name}</h2>
 		<script>
+			if ('${update.site.h2}' != '') {
+				document.write("<h2>${update.site.h2}</h2>");
+			} else {
+				document.write("<h2>Eclipse Plugin Downloads - ${update.site.name}</h2>");
+			}
 			if ('${update.site.version}' != '') {
 				document.write("<p>Build: ${update.site.version}</p>");
 			}

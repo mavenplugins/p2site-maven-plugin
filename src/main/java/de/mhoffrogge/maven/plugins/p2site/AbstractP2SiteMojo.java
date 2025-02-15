@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Stack;
 
 import org.apache.commons.io.FileUtils;
@@ -36,7 +38,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
   /**
    * The base directory to start processing.
    */
-  @Parameter(defaultValue = "${basedir}", required = true)
+  @Parameter(defaultValue = "${basedir}", property = "p2site.baseDir", required = true)
   private String baseDir;
 
   /**
@@ -117,7 +119,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
    * If true, then composite xml files will be created for directories only that contain an updateSite.properties
    * file.
    */
-  @Parameter(defaultValue = "false", required = true)
+  @Parameter(defaultValue = "false", property = "p2site.compositeXmlsForFoldersWithUpdateSitePropertiesOnly", required = true)
   private boolean compositeXmlsForFoldersWithUpdateSitePropertiesOnly;
 
   /**
@@ -135,13 +137,13 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
   /**
    * Optional: Filename for a file enforced to be copied over <code>baseDir/updateSitePropertiesFileName</code>.
    */
-  @Parameter(required = false)
+  @Parameter(required = false, property = "p2site.enforceBaseDirUpdateSitePropertiesFile")
   private String enforceBaseDirUpdateSitePropertiesFile;
 
   /**
    * If true, index.html and composite files will be created in <code>dryRunFolder</code>.
    */
-  @Parameter(defaultValue = "false", required = false)
+  @Parameter(defaultValue = "false", property = "p2site.dryRun", required = false)
   private boolean dryRun;
 
   /**
@@ -149,6 +151,12 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
    */
   @Parameter(defaultValue = "${project.build.directory}/p2site_dryrun", required = true)
   private String dryRunFolder;
+
+  /**
+   * Optional: Fixed <code>p2.timesStamp</code> to be used in composite files.
+   */
+  @Parameter(required = false, property = "p2site.timeStamp")
+  private String timeStamp;
 
   private String indexUpdateSiteTemplate;
 
@@ -164,6 +172,8 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
 
   private final List<File> filesToBeDeletedAfterRun = new ArrayList<File>();
 
+  private final List<Pair<String, String>> propsToBeReplacedInTemplates = new ArrayList<Pair<String, String>>();
+
   private static final String INDEX_HTML_FILE_NAME = "index.html";
 
   private static final String FOLDER_NAME_IS_VERSION_PATTERN = "^[0-9]+\\.[0-9]+.*";
@@ -174,15 +184,28 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
 
   private static final String COMPOSITE_CONTENT_EXTENSION = ".xml";
 
+  private static final String P2INDEX_FILENAME = "p2.index";
+
   private static final String COMPOSITE_ARTIFACTS_FILENAME = COMPOSITE_ARTIFACTS_BASENAME + COMPOSITE_CONTENT_EXTENSION;
 
   private static final String COMPOSITE_CONTENT_FILENAME = COMPOSITE_CONTENT_BASENAME + COMPOSITE_CONTENT_EXTENSION;
 
   private static final String DEFAULT_UPDATE_SITE_DESCRIPTION = "Eclipse P2 Plugins";
 
+  public static final String UPDATESITE_NO_COMPOSITE_FILES_PROP_NAME = "update.site.no_composite_files";
+
   protected void executeInternal(final boolean isToCreateCompositeXmls, final boolean isToCreateIndexHtml)
       throws MojoExecutionException, MojoFailureException {
+    // Init prop values to be replaced in templates
+    // Pair.of(<propName>, <defaultValue or null>)
+    this.propsToBeReplacedInTemplates
+        .add(Pair.of(this.updateSiteDescriptionPropertyName, DEFAULT_UPDATE_SITE_DESCRIPTION));
+    this.propsToBeReplacedInTemplates.add(Pair.of(this.updateSiteVersionPropertyName, null));
+    this.propsToBeReplacedInTemplates.add(Pair.of("update.site.title", null));
+    this.propsToBeReplacedInTemplates.add(Pair.of("update.site.h2", null));
+    this.propsToBeReplacedInTemplates.add(Pair.of("update.site.buildinfo", null));
     try {
+      this.timeStamp = StringUtils.defaultIfBlank(this.timeStamp, Long.toString(new Date().getTime()));
       this.isToCreateCompositeXmls = isToCreateCompositeXmls;
       this.isToCreateIndexHtml = isToCreateIndexHtml;
       this.indexUpdateSiteTemplate = getIndexTemplate(this.indexUpdateSiteTemplateFileName,
@@ -276,7 +299,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
         }
       }
       try {
-        return IOUtils.toString(indexTemplateStream, Charset.defaultCharset());
+        return readTextStreamAndNormalizeEOL(indexTemplateStream);
       } catch (IOException e) {
         throw new MojoFailureException("Failed to read the index template file.", e);
       }
@@ -307,10 +330,11 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     for (File file : listOfFiles) {
       if (file.isFile() && StringUtils.equalsIgnoreCase(this.updateSitePropertiesFileName, file.getName())) {
         // we have found it - so we are done for this directory
-        getLog().info("Found " + file.getAbsolutePath());
+        getLog().info("Found properties " + file.getAbsolutePath());
         Properties props = new Properties();
         try (FileInputStream finput = new FileInputStream(file)) {
           props.load(finput);
+          resolveVariablesInPropValues(props, file.getAbsolutePath());
         } catch (IOException e) {
           throw new MojoFailureException("Failed to read file: " + file.getAbsolutePath(), e);
         }
@@ -340,6 +364,52 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(depth, dir, "", null, this.isToCreateCompositeXmls);
   }
 
+  /**
+   * @param props        props the properties to scan for variable place holders
+   * @param propFileName the filename the properties did have been read from
+   */
+  protected void resolveVariablesInPropValues(Properties props, final String propFileName) {
+    int remainingVarCount = countPropVars(props);
+    for (int iPass = 1; remainingVarCount > 0 && iPass <= 2; iPass++) {
+      getLog().debug("remainingVarCount - pass#" + iPass + ": " + remainingVarCount);
+      final Set<Object> propsKeySet = props.keySet();
+      for (Object propKey : propsKeySet) {
+        final String sPropKey = (String) propKey;
+        final String sPropValue = props.getProperty(sPropKey);
+        for (Object innerPropKey : propsKeySet) {
+          final String sInnerPropKey = (String) innerPropKey;
+          if (StringUtils.equals(sPropKey, sInnerPropKey)) {
+            continue;
+          }
+          final String sInnerPropValue = props.getProperty(sInnerPropKey);
+          final String sInnerPropUdateValue = StringUtils.replace(sInnerPropValue, "${" + sPropKey + "}", sPropValue);
+          if (!StringUtils.equals(sInnerPropValue, sInnerPropUdateValue)) {
+            props.setProperty(sInnerPropKey, sInnerPropUdateValue);
+            getLog()
+                .debug("property variable replace - pass#" + iPass + ": ${" + sPropKey + "} -> \"" + sPropValue + "\"");
+          }
+        }
+      }
+      remainingVarCount = countPropVars(props);
+      if (iPass == 2 && remainingVarCount > 0) {
+        getLog().warn("There are unresolvable or cyclic variables in " + propFileName);
+      }
+    }
+  }
+
+  /**
+   * @param props the properties to scan for variable place holders
+   * @return count of variables within prop values
+   */
+  protected int countPropVars(Properties props) {
+    int ret = 0;
+    for (final Entry<Object, Object> entry : props.entrySet()) {
+      final String sPropValue = (String) entry.getValue();
+      ret += StringUtils.countMatches(sPropValue, "${");
+    }
+    return ret;
+  }
+
   protected void addFolderToFolderStackIfNeeded(int depth, String folderName) {
     if (depth >= this.folderStack.size()) {
       this.folderStack.push(Pair.of(folderName, new ArrayList<String>()));
@@ -353,7 +423,8 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     if (this.folderStack.size() > depth) {
       final List<String> listOfChilds = this.folderStack.pop().getRight();
       addProbableForwardLinks(listOfChilds, props);
-      if (isToCreateCompositeXmls && !listOfChilds.isEmpty()) {
+      if (isToCreateCompositeXmls && !Boolean.valueOf(props.getProperty(UPDATESITE_NO_COMPOSITE_FILES_PROP_NAME))
+          && !listOfChilds.isEmpty()) {
         createCompositeXmls(listOfChilds, dir, repoName);
         ret = true;
       }
@@ -382,13 +453,13 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
       throws MojoFailureException {
     getLog().info(" Creating compositeXmls repoName=" + repoName + " with " + listOfChilds.size() + " childs for "
         + dir.getAbsolutePath());
-    final long timeStamp = new Date().getTime();
-    createCompositeXml(COMPOSITE_ARTIFACTS_BASENAME, timeStamp, listOfChilds, dir, repoName);
-    createCompositeXml(COMPOSITE_CONTENT_BASENAME, timeStamp, listOfChilds, dir, repoName);
+    createCompositeXml(COMPOSITE_ARTIFACTS_BASENAME, listOfChilds, dir, repoName);
+    createCompositeXml(COMPOSITE_CONTENT_BASENAME, listOfChilds, dir, repoName);
+    createCompositeP2IndexIfNeeded(dir);
   }
 
-  protected void createCompositeXml(final String compositeBaseName, final long timeStamp,
-      final List<String> listOfChilds, final File dir, final String repoName) throws MojoFailureException {
+  protected void createCompositeXml(final String compositeBaseName, final List<String> listOfChilds, final File dir,
+      final String repoName) throws MojoFailureException {
     final String resourceName = compositeBaseName + "_Template" + COMPOSITE_CONTENT_EXTENSION;
     final InputStream templateStream = getClass().getResourceAsStream(resourceName);
     if (templateStream == null) {
@@ -396,23 +467,53 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     }
     String fileContent;
     try {
-      fileContent = IOUtils.toString(templateStream, Charset.defaultCharset());
+      fileContent = readTextStreamAndNormalizeEOL(templateStream);
     } catch (IOException e) {
-      throw new MojoFailureException("Failed to read the index template file.", e);
+      throw new MojoFailureException("Failed to read the template file " + resourceName + ".", e);
     }
     fileContent = replaceFileContent(fileContent, repoName, "repoName");
-    fileContent = replaceFileContent(fileContent, Long.toString(timeStamp), "timeStamp");
+    fileContent = replaceFileContent(fileContent, this.timeStamp, "timeStamp");
     fileContent = replaceFileContent(fileContent, Integer.toString(listOfChilds.size()), "childSize");
     final StringBuilder sbFiles = new StringBuilder();
     for (String childLocation : listOfChilds) {
       if (sbFiles.length() > 0) {
-        sbFiles.append("\n");
+        sbFiles.append(System.lineSeparator());
       }
       sbFiles.append(buildCompositeLocation(childLocation));
     }
     fileContent = replaceFileContent(fileContent, sbFiles.toString(), "childLocations");
     final File compositeFile = new File(dir, compositeBaseName + COMPOSITE_CONTENT_EXTENSION);
     writeTargetFileConsideringDryRun(compositeFile, fileContent);
+  }
+
+  /**
+   * @param templateStream the input stream to read from
+   * @return System EOL normalized text file content
+   * @throws IOException in case of a file read failure
+   */
+  protected String readTextStreamAndNormalizeEOL(InputStream templateStream) throws IOException {
+    String ret = IOUtils.toString(templateStream, Charset.defaultCharset());
+    ret = StringUtils.replace(ret, StringUtils.CR + StringUtils.LF, StringUtils.LF);
+    return StringUtils.replace(ret, StringUtils.LF, System.lineSeparator());
+  }
+
+  protected void createCompositeP2IndexIfNeeded(File dir) throws MojoFailureException {
+    if (new File(dir, P2INDEX_FILENAME).exists()) {
+      return;
+    }
+    final String resourceName = "composite_Template_" + P2INDEX_FILENAME;
+    final InputStream templateStream = getClass().getResourceAsStream(resourceName);
+    if (templateStream == null) {
+      throw new MojoFailureException(resourceName + " does not exist in this plugins JAR package.");
+    }
+    final String fileContent;
+    try {
+      fileContent = readTextStreamAndNormalizeEOL(templateStream);
+    } catch (IOException e) {
+      throw new MojoFailureException("Failed to read the template file " + resourceName + ".", e);
+    }
+    final File compositeP2IndexFile = new File(dir, P2INDEX_FILENAME);
+    writeTargetFileConsideringDryRun(compositeP2IndexFile, fileContent);
   }
 
   /**
@@ -470,20 +571,20 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     final boolean isCompositeXmlCreated = removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(depth, dir, repoName,
         props, isToCreateCompositeXmls);
     if (isCompositeXmlCreated) {
-      sbFolderContent.append("\n").append(buildFileLink(COMPOSITE_ARTIFACTS_FILENAME));
-      sbFolderContent.append("\n").append(buildFileLink(COMPOSITE_CONTENT_FILENAME));
+      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(COMPOSITE_ARTIFACTS_FILENAME));
+      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(COMPOSITE_CONTENT_FILENAME));
     }
     if (this.isToCreateIndexHtml) {
       String indexHtml = isUpdateSite ? new String(this.indexUpdateSiteTemplate)
           : new String(this.indexNonUpdateSiteTemplate);
       indexHtml = replaceFileContent(indexHtml, repoName, this.updateSiteNamePropertyName);
       indexHtml = replaceFileContent(indexHtml, dirName, this.updateSiteDirNamePropertyName);
-      indexHtml = replaceFileContent(indexHtml, StringUtils
-          .defaultIfBlank(props.getProperty(this.updateSiteDescriptionPropertyName), DEFAULT_UPDATE_SITE_DESCRIPTION),
-          this.updateSiteDescriptionPropertyName);
-      indexHtml = replaceFileContent(indexHtml, props.getProperty(this.updateSiteVersionPropertyName),
-          this.updateSiteVersionPropertyName);
       indexHtml = replaceFileContent(indexHtml, sbFolderContent.toString(), this.updateSiteContentsPropertyName);
+      for (Pair<String, String> propDefaultPair : this.propsToBeReplacedInTemplates) {
+        indexHtml = replaceFileContent(indexHtml,
+            StringUtils.defaultIfBlank(props.getProperty(propDefaultPair.getKey()), propDefaultPair.getValue()),
+            propDefaultPair.getKey());
+      }
       final File indexHtmlFile = new File(dir, INDEX_HTML_FILE_NAME);
       writeTargetFileConsideringDryRun(indexHtmlFile, indexHtml);
       this.isIndexHtmlCreated = true;
@@ -513,7 +614,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     for (File file : listOfFiles) {
       if (file.isFile() && !isExcludedFileName(file.getName())) {
         if (sbFiles.length() > 0) {
-          sbFiles.append("\n");
+          sbFiles.append(System.lineSeparator());
         }
         sbFiles.append(buildFileLink(file.getName()));
         if (!isUpdateSite) {
@@ -521,7 +622,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
         }
       } else if (file.isDirectory() && !isExcludedDirName(file.getName())) {
         if (sbFolder.length() > 0) {
-          sbFolder.append("\n");
+          sbFolder.append(System.lineSeparator());
         }
         sbFolder.append(buildFolderLink(file.getName()));
         final File probablePropertiesFile = new File(file, this.updateSitePropertiesFileName);
@@ -544,7 +645,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
         || StringUtils.equalsIgnoreCase(fileName, "artifacts.jar")
         || StringUtils.startsWithIgnoreCase(fileName, "content.xml")
         || StringUtils.startsWithIgnoreCase(fileName, "artifacts.xml")
-        || StringUtils.equalsIgnoreCase(fileName, "p2.index");
+        || StringUtils.equalsIgnoreCase(fileName, P2INDEX_FILENAME);
   }
 
   protected boolean isExcludedFileName(String fileName) {

@@ -93,6 +93,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Initial release maintained within GitHub mavenplugins organization
 - Moved and updated from `de.mhoffrogge.maven:p2site-maven-plugin:1.0.5` at [p2site-maven-plugin on GitLab](https://gitlab.com/mhopen/maven-plugins/-/tree/master/p2site-maven-plugin?ref_type=heads)
 
+### 🚀 New Features
+- Run as standalone Maven Plugin without a project POM
+- Add commandline properties for the appropriate config item:
+  - `p2site.baseDir`
+  - `p2site.compositeXmlsForFoldersWithUpdateSitePropertiesOnly`
+  - `p2site.createCompositeXmls`
+  - `p2site.dryRun`
+  - `p2site.enforceBaseDirUpdateSitePropertiesFile`
+- Add new config / property `p2site.timeStamp` to create composite files with a predefined timestamp
+- Add new optional properties for updateSite.properties:
+  - `update.site.no_composite_files` - `boolean`: If true no composite files will be created for this directory
+  - `update.site.h2` - `string`: Will replace the `<h2>` line in templates. If defined, this will overrule the default `<h2>` line containing `update.site.title` in templates.
+  - `update.site.buildinfo` - `string`: If set, this will overrule the default `Build: ${update.site.version}` line in templates.
+- `updateSite.properties` can contain variable placeholders in property values of format `${<property name>}`
+
 ### 📦 Updates
 - Maven groupId changed to `io.github.mavenplugins`
 

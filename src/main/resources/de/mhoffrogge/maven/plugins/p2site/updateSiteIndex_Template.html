@@ -2,7 +2,10 @@
 <head>
 <link rel="stylesheet" href="https://www.eclipse.org/eclipse.org-common/themes/solstice/public/stylesheets/quicksilver.min.css?v1.3"/>
 <script>
-	if ('${update.site.version}' != '') {
+	if ('${update.site.title}' != '') {
+		document.write("<title>${update.site.title}</title>");
+	// for backward compatibility
+	} else if ('${update.site.version}' != '') {
 		document.write("<title>${update.site.name} - ${update.site.description} Update Site: ${update.site.version}</title>");
 	} else {
 		document.write("<title>${update.site.name} - ${update.site.description} Update Site</title>");
@@ -29,9 +32,15 @@
 	<tr>
 		<td>&#160;&#160;&#160;&#160;&#160;&#160;</td>
 		<td>
-		<h2 class="title">${update.site.name} - ${update.site.description} Update Site</h2>
 		<script>
-			if ('${update.site.version}' != '') {
+			if ('${update.site.h2}' != '') {
+				document.write("<h2 class=\"title\">${update.site.h2}</h2>");
+			} else {
+				document.write("<h2 class=\"title\">${update.site.name} - ${update.site.description} Update Site</h2>");
+			}
+			if ('${update.site.buildinfo}' != '') {
+				document.write("<p>${update.site.buildinfo}</p>");
+			} else if ('${update.site.version}' != '') {
 				document.write("<p>Build: ${update.site.version}</p>");
 			}
 		</script>

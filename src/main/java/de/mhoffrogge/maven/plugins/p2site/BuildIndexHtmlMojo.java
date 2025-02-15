@@ -13,13 +13,13 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  *
  * @author mhoffrog
  */
-@Mojo(name = "build-index-html", requiresDependencyResolution = ResolutionScope.COMPILE, defaultPhase = LifecyclePhase.PACKAGE)
+@Mojo(name = "build-index-html", requiresProject = false, requiresDependencyResolution = ResolutionScope.COMPILE, defaultPhase = LifecyclePhase.PACKAGE)
 public class BuildIndexHtmlMojo extends AbstractP2SiteMojo {
 
   /**
    * Create composite xml files in the parent directories of the underlying P2 update site directories.
    */
-  @Parameter(defaultValue = "false", required = true)
+  @Parameter(defaultValue = "false", property = "p2site.createCompositeXmls", required = true)
   private boolean createCompositeXmls;
 
   @Override
