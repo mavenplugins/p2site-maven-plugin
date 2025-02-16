@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>p2site-maven-plugin</artifactId>
-  <version>1.0.6-SNAPSHOT</version>
+  <version>1.0.5-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>P2Site Maven Plugin</name>

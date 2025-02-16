@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![1.0.7 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.7)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.7)
+[![1.0.6 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.6)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.6)
 
 ### Summary
 - TBD
@@ -85,9 +85,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - TBD
 
 
-## [1.0.6]
+## [1.0.5]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![1.0.6 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.6)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.6)
+[![1.0.5 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.5)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.5)
 
 ### Summary
 - Initial release maintained within GitHub mavenplugins organization
@@ -104,5 +104,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.6..HEAD
-[1.0.6]: https://github.com/mavenplugins/p2site-maven-plugin/releases/tag/v1.0.6
+[Unreleased]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.5..HEAD
+[1.0.5]: https://github.com/mavenplugins/p2site-maven-plugin/releases/tag/v1.0.5
