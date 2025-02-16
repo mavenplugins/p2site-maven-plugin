@@ -90,8 +90,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [![1.0.6 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.6)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.6)
 
 ### Summary
-- Initial release maintained within GitHub mavenplugins organization
-- Moved and updated from `de.mhoffrogge.maven:p2site-maven-plugin:1.0.5` at [p2site-maven-plugin on GitLab](https://gitlab.com/mhopen/maven-plugins/-/tree/master/p2site-maven-plugin?ref_type=heads)
+- Make this plugin run as standalone plugin
+- Feature enhancements - see below
 
 ### 🚀 New Features
 - Run as standalone Maven Plugin without a project POM
@@ -108,6 +108,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - `update.site.buildinfo` - `string`: If set, this will overrule the default `Build: ${update.site.version}` line in templates.
 - `updateSite.properties` can contain variable placeholders in property values of format `${<property name>}`
 
+
+## [1.0.5]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![1.0.5 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.5)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.5)
+
+### Summary
+- Initial release maintained within GitHub mavenplugins organization
+- Moved and updated from `de.mhoffrogge.maven:p2site-maven-plugin:1.0.5` at [p2site-maven-plugin on GitLab](https://gitlab.com/mhopen/maven-plugins/-/tree/master/p2site-maven-plugin?ref_type=heads)
+
 ### 📦 Updates
 - Maven groupId changed to `io.github.mavenplugins`
 
@@ -120,4 +129,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 -->
 
 [Unreleased]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.6..HEAD
-[1.0.6]: https://github.com/mavenplugins/p2site-maven-plugin/releases/tag/v1.0.6
+[1.0.6]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.5..v1.0.6
+[1.0.5]: https://github.com/mavenplugins/p2site-maven-plugin/releases/tag/v1.0.5
