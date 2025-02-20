@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 <!-- !!! Align version in badge URLs as well !!! -->
-[![1.0.7 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.7)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.7)
+[![1.0.8 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.8)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.8)
 
 ### Summary
 - TBD
@@ -84,6 +84,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### 📦 Updates
 - TBD
 
+
+## [1.0.7]
+<!-- !!! Align version in badge URLs as well !!! -->
+[![1.0.7 Badge](https://img.shields.io/nexus/r/io.github.mavenplugins/p2site-maven-plugin?server=https://s01.oss.sonatype.org&label=Maven%20Central&queryOpt=:v=1.0.7)](https://central.sonatype.com/artifact/io.github.mavenplugins/p2site-maven-plugin/1.0.7)
+
+### Summary
+- Enhance `index.html` to display size and last modified time stamp of files listed
+
+### ✨ Improvements
+- Enhance `index.html` to display size and last modified time stamp of files listed
+
+### 🐛 Fixes
+- Get `p2.index` listed by `index.html` in case it has been created by the plugin run
+- Use P2 Update Site template for `index.html` in case composite files and/or `p2.index` files are being created
 
 ## [1.0.6]
 <!-- !!! Align version in badge URLs as well !!! -->
@@ -128,6 +142,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - This is just a dummy placeholder to make the parser of GHCICD/release-notes-from-changelog@v1 happy!
 -->
 
-[Unreleased]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.6..HEAD
+[Unreleased]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.7..HEAD
+[1.0.7]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.6..v1.0.7
 [1.0.6]: https://github.com/mavenplugins/p2site-maven-plugin/compare/v1.0.5..v1.0.6
 [1.0.5]: https://github.com/mavenplugins/p2site-maven-plugin/releases/tag/v1.0.5

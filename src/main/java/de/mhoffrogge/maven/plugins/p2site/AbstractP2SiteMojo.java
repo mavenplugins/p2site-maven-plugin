@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -416,17 +417,26 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     }
   }
 
-  protected boolean removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(final int depth, final File dir,
-      final String repoName, final Properties props, final boolean isToCreateCompositeXmls)
+  /**
+   * @param depth                   the folder walking iteration depth
+   * @param dir                     the current dir to create files in
+   * @param repoName                the P2 repo name
+   * @param props                   properties from updateSite.properties
+   * @param isToCreateCompositeXmls true if composite XMLs are to be created
+   * @return Pair.of(isCompositeXmlsCreated, isP2IndexCreated)
+   * @throws MojoFailureException in case of any failure
+   */
+  protected Pair<Boolean, Boolean> removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(final int depth,
+      final File dir, final String repoName, final Properties props, final boolean isToCreateCompositeXmls)
       throws MojoFailureException {
-    boolean ret = false;
+    Pair<Boolean, Boolean> ret = Pair.of(false, false);
     if (this.folderStack.size() > depth) {
       final List<String> listOfChilds = this.folderStack.pop().getRight();
       addProbableForwardLinks(listOfChilds, props);
       if (isToCreateCompositeXmls && !Boolean.valueOf(props.getProperty(UPDATESITE_NO_COMPOSITE_FILES_PROP_NAME))
           && !listOfChilds.isEmpty()) {
-        createCompositeXmls(listOfChilds, dir, repoName);
-        ret = true;
+        final boolean isP2IndexCreated = createCompositeXmls(listOfChilds, dir, repoName);
+        ret = Pair.of(true, isP2IndexCreated);
       }
     }
     return ret;
@@ -449,13 +459,13 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     }
   }
 
-  protected void createCompositeXmls(List<String> listOfChilds, final File dir, final String repoName)
+  protected boolean createCompositeXmls(List<String> listOfChilds, final File dir, final String repoName)
       throws MojoFailureException {
     getLog().info(" Creating compositeXmls repoName=" + repoName + " with " + listOfChilds.size() + " childs for "
         + dir.getAbsolutePath());
     createCompositeXml(COMPOSITE_ARTIFACTS_BASENAME, listOfChilds, dir, repoName);
     createCompositeXml(COMPOSITE_CONTENT_BASENAME, listOfChilds, dir, repoName);
-    createCompositeP2IndexIfNeeded(dir);
+    return createCompositeP2IndexIfNeeded(dir);
   }
 
   protected void createCompositeXml(final String compositeBaseName, final List<String> listOfChilds, final File dir,
@@ -497,9 +507,9 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     return StringUtils.replace(ret, StringUtils.LF, System.lineSeparator());
   }
 
-  protected void createCompositeP2IndexIfNeeded(File dir) throws MojoFailureException {
+  protected boolean createCompositeP2IndexIfNeeded(File dir) throws MojoFailureException {
     if (new File(dir, P2INDEX_FILENAME).exists()) {
-      return;
+      return false;
     }
     final String resourceName = "composite_Template_" + P2INDEX_FILENAME;
     final InputStream templateStream = getClass().getResourceAsStream(resourceName);
@@ -514,6 +524,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
     }
     final File compositeP2IndexFile = new File(dir, P2INDEX_FILENAME);
     writeTargetFileConsideringDryRun(compositeP2IndexFile, fileContent);
+    return true;
   }
 
   /**
@@ -556,23 +567,29 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
         && dir.getName().matches(FOLDER_NAME_IS_VERSION_PATTERN)) {
       props.setProperty(this.updateSiteVersionPropertyName, dir.getName());
     }
-    final boolean isUpdateSite;
+    boolean isUpdateSite;
     final StringBuilder sbFolderContent;
     {
       final Pair<Boolean, StringBuilder> pairUpdateSiteContent = getUpdateSiteContentFragment(dir, props, depth);
       isUpdateSite = pairUpdateSiteContent.getLeft();
       sbFolderContent = pairUpdateSiteContent.getRight();
     }
-    if (isUpdateSite) {
-      addToCompositeChilds(depth, dir.getName());
-    }
     final String repoName = props.getProperty(this.updateSiteNamePropertyName);
     final String dirName = dir.getName();
-    final boolean isCompositeXmlCreated = removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(depth, dir, repoName,
-        props, isToCreateCompositeXmls);
+    final Pair<Boolean, Boolean> pairIsCompositeXmlCreatedIsP2IndexCreated = removeFolderFromFolderStackAndCreateCompositeXmlIfNeeded(
+        depth, dir, repoName, props, isToCreateCompositeXmls);
+    boolean isCompositeXmlCreated = pairIsCompositeXmlCreatedIsP2IndexCreated.getLeft();
+    boolean isP2IndexCreated = pairIsCompositeXmlCreatedIsP2IndexCreated.getRight();
+    isUpdateSite |= isP2IndexCreated || isCompositeXmlCreated;
+    if (isP2IndexCreated) {
+      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(new File(dir, P2INDEX_FILENAME)));
+    }
     if (isCompositeXmlCreated) {
-      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(COMPOSITE_ARTIFACTS_FILENAME));
-      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(COMPOSITE_CONTENT_FILENAME));
+      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(new File(dir, COMPOSITE_ARTIFACTS_FILENAME)));
+      sbFolderContent.append(System.lineSeparator()).append(buildFileLink(new File(dir, COMPOSITE_CONTENT_FILENAME)));
+    }
+    if (isUpdateSite) {
+      addToCompositeChilds(depth, dir.getName());
     }
     if (this.isToCreateIndexHtml) {
       String indexHtml = isUpdateSite ? new String(this.indexUpdateSiteTemplate)
@@ -616,7 +633,7 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
         if (sbFiles.length() > 0) {
           sbFiles.append(System.lineSeparator());
         }
-        sbFiles.append(buildFileLink(file.getName()));
+        sbFiles.append(buildFileLink(file));
         if (!isUpdateSite) {
           isUpdateSite = isUpdateSiteFile(file.getName());
         }
@@ -661,14 +678,26 @@ abstract class AbstractP2SiteMojo extends AbstractBaseMojo {
   }
 
   protected static String buildFolderLink(String folderName) {
-    return String.format("<img src='https://dev.eclipse.org/small_icons/places/folder.png'><a href='%s/'> %s</a><br />",
+    return String.format(
+        "<tr><td><img style='margin-right:4px;' src='https://dev.eclipse.org/small_icons/places/folder.png'><a href='%s/'> %s</a></td></tr>",
         folderName, folderName);
   }
 
-  protected static String buildFileLink(final String fileName) {
+  protected static String buildFileLink(final File file) {
+    final String fileName = file.getName();
+    String type = "";
+    if (StringUtils.endsWithIgnoreCase(fileName, ".xml")) {
+      type = "text/xml";
+    } else if (StringUtils.endsWithIgnoreCase(fileName, ".txt")
+        || StringUtils.equalsIgnoreCase(fileName, P2INDEX_FILENAME)) {
+      type = "text/plain";
+    }
+    final String fileSize = FileUtils.byteCountToDisplaySize(file.length());
+    final String fileLastModified = new SimpleDateFormat("yyyy-MM-dd'&nbsp&nbsp'HH:mm")
+        .format(new Date(file.lastModified()));
     return String.format(
-        "<img src='https://dev.eclipse.org/small_icons/actions/edit-copy.png'><a href='%s'> %s</a><br />", fileName,
-        fileName);
+        "<tr><td style='padding-right:50px;'><img style='margin-right:4px;' src='https://dev.eclipse.org/small_icons/actions/edit-copy.png'><a href='%s' %s> %s</a></td><td style='text-align: right; padding-right:15px;'> %s</td><td> %s</td></tr>",
+        fileName, StringUtils.isNotBlank(type) ? "type='" + type + "'" : "", fileName, fileSize, fileLastModified);
   }
 
   protected static String buildCompositeLocation(String locationName) {
