@@ -1,17 +1,15 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.github.mavenplugins</groupId>
     <artifactId>parent-maven-plugins</artifactId>
     <version>5</version>
-    <relativePath></relativePath>
+    <relativePath/>
   </parent>
 
   <artifactId>p2site-maven-plugin</artifactId>
-  <version>1.0.7-SNAPSHOT</version>
+  <version>1.0.7</version>
   <packaging>maven-plugin</packaging>
 
   <name>P2Site Maven Plugin</name>
@@ -48,7 +46,7 @@
   <scm>
     <connection>scm:git:https://github.com/mavenplugins/p2site-maven-plugin.git</connection>
     <url>https://github.com/mavenplugins/p2site-maven-plugin</url>
-    <tag>HEAD</tag>
+    <tag>v1.0.7</tag>
   </scm>
 
   <issueManagement>
